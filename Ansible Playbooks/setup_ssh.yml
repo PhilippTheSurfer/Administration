@@ -8,14 +8,14 @@
     ssh_key_file: ~/[Server-Name]_rsa.pub
 
   tasks:
-	- name: Ensure user 'philipp' is present with bash shell
-	  ansible.builtin.user:
-	    name: philipp
-	    password: "{{ 'changeme443' | password_hash('sha512') }}"
-	    shell: /bin/bash
-	    home: /home/philipp
-	    create_home: yes
-	    groups: sudo
+    - name: Ensure user 'philipp' is present with bash shell
+      ansible.builtin.user:
+        name: philipp
+        password: "{{ 'changeme443' | password_hash('sha512') }}"
+        shell: /bin/bash
+        home: /home/philipp
+        create_home: yes
+        groups: sudo
 
 
     - name: Ensure .ssh directory exists
