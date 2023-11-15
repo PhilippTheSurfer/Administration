@@ -1,0 +1,56 @@
+---
+- name: Initial server setup
+  hosts: your_server
+  become: yes
+  vars:
+    user: philipp
+    password: changeme443
+    ssh_key_file: ~/[Server-Name]_rsa.pub
+
+  tasks:
+	- name: Ensure user 'philipp' is present with bash shell
+	  ansible.builtin.user:
+	    name: philipp
+	    password: "{{ 'changeme443' | password_hash('sha512') }}"
+	    shell: /bin/bash
+	    home: /home/philipp
+	    create_home: yes
+	    groups: sudo
+
+
+    - name: Ensure .ssh directory exists
+      file:
+        path: "/home/{{ user }}/.ssh"
+        state: directory
+        mode: '0700'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Add authorized key
+      authorized_key:
+        user: "{{ user }}"
+        state: present
+        key: "{{ lookup('file', ssh_key_file) }}"
+
+    - name: Set permissions for home directory
+      file:
+        path: "/home/{{ user }}"
+        mode: 'g-w'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Update SSH configuration
+      blockinfile:
+        path: /etc/ssh/sshd_config
+        block: |
+          Port 1461
+          LoginGraceTime 2m
+          PermitRootLogin no
+          StrictModes yes
+          AuthenticationMethods publickey
+
+    - name: Restart SSH service
+      service:
+        name: ssh
+        state: restarted
+
