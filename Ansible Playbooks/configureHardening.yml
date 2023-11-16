@@ -1,0 +1,35 @@
+---
+- name: Server Hardening
+  hosts: your_server
+  become: no
+
+  tasks:
+  - name: Install git
+    apt:
+      name: git
+      state: present
+      update_cache: yes
+  
+  - name: Sleep for 300 seconds and continue with play
+    ansible.builtin.wait_for:
+      timeout: 60
+    delegate_to: localhost
+
+  - name: clone hardening Repository
+    git:
+      repo: https://github.com/AI-Gruppe/ai-internal_serverscripts_sw
+      dest: /home/philipp/
+      clone: yes
+      update: yes
+
+  - name: Wait until the file "/home/philipp/ai-internal_serverscripts_sw/server-hardening.sh" is present before continuing
+    ansible.builtin.wait_for:
+      path: /home/philipp/ai-internal_serverscripts_sw/server-hardening.sh
+
+  - name: change perm of "/home/philipp/ai-internal_serverscripts_sw/server-hardening.sh", adding "+x"
+    file: dest=/home/philipp/ai-internal_serverscripts_sw/server-hardening.sh mode=a+x
+
+  - name: execute script as sudo
+    become: true
+    command: sudo ./server-hardening.sh --log-user philipp --ssh 1461 --web yes --pw-auth no
+    
