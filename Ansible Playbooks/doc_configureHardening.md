@@ -1,6 +1,6 @@
 ## Beschreibung
 
-Das Playbook übernimmt die Ausführung des Hardening
+Das Playbook übernimmt die Ausführung des Hardening. Allerdings ohne log Server.
 
 Es werden folgende Aufgaben ausgeführt:
 1. git wird installiert
