@@ -1,0 +1,52 @@
+---
+- name: Upgrade Debian 11 to Debian 12
+  hosts: your_server
+  become: true
+
+  tasks:
+
+    - name: Remove apt-listbugs to avoid interruption
+      apt:
+        name: apt-listbugs
+        state: absent
+        
+    - name: Update all packages to the latest version
+      apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Change sources.list to Debian 12 (Bookworm)
+      lineinfile:
+        path: /etc/apt/sources.list
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: 'deb http://deb.debian.org/debian/ bullseye main', line: 'deb http://deb.debian.org/debian/ bookworm main' }
+        - { regexp: 'deb-src http://deb.debian.org/debian/ bullseye main', line: 'deb-src http://deb.debian.org/debian/ bookworm main' }
+        - { regexp: 'deb http://security.debian.org/debian-security bullseye-security main', line: 'deb http://security.debian.org/debian-security bookworm-security main' }
+        - { regexp: 'deb-src http://security.debian.org/debian-security bullseye-security main', line: 'deb-src http://security.debian.org/debian-security bookworm-security main' }
+        - { regexp: 'deb http://deb.debian.org/debian/ bullseye-updates main', line: 'deb http://deb.debian.org/debian/ bookworm-updates main' }
+        - { regexp: 'deb-src http://deb.debian.org/debian/ bullseye-updates main', line: 'deb-src http://deb.debian.org/debian/ bookworm-updates main' }
+
+    - name: Update apt cache after changing sources
+      apt:
+        update_cache: yes
+
+    - name: Upgrade to Debian 12 (Bookworm)
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+        allow_unauthenticated: yes
+
+    - name: Install apt-listbugs again
+      apt:
+        name: apt-listbugs
+        state: present
+
+    - name: Remove unused packages post-upgrade
+      apt:
+        autoremove: yes
+
+    - name: Reboot the server
+      ansible.builtin.reboot:
