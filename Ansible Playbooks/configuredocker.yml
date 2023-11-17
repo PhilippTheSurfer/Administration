@@ -32,11 +32,15 @@
         state: directory
         mode: '0755'
 
-    - name: Add Docker's official GPG key
+    - name: Download Docker GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/debian/gpg
-        dest: /etc/apt/keyrings/docker.gpg
-        mode: 'a+r'
+        dest: /tmp/docker.gpg
+
+    - name: Add Docker GPG key
+      ansible.builtin.shell:
+        cmd: gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.gpg
+
 
     - name: Add Docker repository
       ansible.builtin.lineinfile:
