@@ -1,7 +1,7 @@
 ---
 - name: Server Hardening
   hosts: your_server
-  become: no
+  become: yes
 
   tasks:
   - name: Install git
@@ -10,10 +10,9 @@
       state: present
       update_cache: yes
   
-  - name: Sleep for 300 seconds and continue with play
+  - name: Sleep for 40 seconds and continue with play
     ansible.builtin.wait_for:
-      timeout: 60
-    delegate_to: localhost
+      timeout: 40
 
   - name: clone hardening Repository
     git:
@@ -21,6 +20,7 @@
       dest: /home/philipp/
       clone: yes
       update: yes
+      force: yes
 
   - name: Wait until the file "/home/philipp/ai-internal_serverscripts_sw/server-hardening.sh" is present before continuing
     ansible.builtin.wait_for:
@@ -31,5 +31,5 @@
 
   - name: execute script as sudo
     become: true
-    command: sudo ./server-hardening.sh --log-user philipp --ssh 1461 --web yes --pw-auth no
+    command: sudo /home/philipp/ai-internal_serverscripts_sw/server-hardening.sh --log-user philipp --ssh 1461 --web yes --pw-auth no
     

@@ -6,6 +6,8 @@ Das Playbook übernimmt die basis config für ssh Zugang per RSA key.
 
 Wenn es sich um ein System von Hetzner handelt wird der User automatisch beim ersten login aufgefordert das Root passwort zu ändern. Dieser vorgang lässt sich in Ansible nicht abbilden, daher muss das erste login manuell erfolgen und das root passwort per hand geändert werden. Danach kann sich ausgeloggt werden.
 
+> Passwörter in der `ini` File müssen immer in `"passwort"` stehen. Ansible hat schwierigkeiten mit Sonderzeichen.
+
 ## Erklärung
 
 Das Script benötigt eine `inventory.ini` Datei. Diese Datei muss wie folgt aussehen:
