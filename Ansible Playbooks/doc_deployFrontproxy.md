@@ -28,7 +28,7 @@ ansible_become_method=sudo
 
 Die angaben unterhalb sind nötig damit ansible commands als sudo ausführen kann.
 
-
+> Das Script braucht jenachdem ob das Server Hardening durchgeführt wurde ca 3-4 Minuten bis es durchgelaufen ist. Für einen genaueren Debug Prozess kann am Ende des Commands die `-vv` Flag gesetzt werden.
 ### Ausführung
 
 Ein Befehl womit sich das Playbook ausführen lässt:
