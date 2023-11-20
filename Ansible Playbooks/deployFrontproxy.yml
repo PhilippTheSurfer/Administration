@@ -1,0 +1,257 @@
+---
+- name: Deploy a docker frontproxy
+  hosts: your_server
+  become: true
+
+
+  tasks:
+    - name: change directory owner in "/opt"
+      file:
+        path: /opt
+        state: directory
+        owner: root
+        group: docker
+        recurse: yes
+
+    - name: Setze Berechtigungen für /opt
+      file:
+        path: /opt
+        state: directory
+        mode: '0775'
+
+    - name: Erstelle Verzeichnis /opt/frontproxy
+      file:
+        path: /opt/frontproxy
+        state: directory
+        mode: '0755'
+
+    - name: Lege docker-compose.yml in /opt/frontproxy an
+      copy:
+        dest: /opt/frontproxy/docker-compose.yml
+        content: |
+          version: '3'
+          services:
+            nginxproxymanager:
+              image: jc21/nginx-proxy-manager:2.9.18
+              ports:
+                - '80:80'
+                - '81:81'
+                - '443:443'
+              environment:
+                DB_MYSQL_HOST: "mysql_npm"
+                DB_MYSQL_PORT: 3306
+                DB_MYSQL_USER: "npm"
+                DB_MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+                DB_MYSQL_NAME: "nginxproxymanager"
+              restart: unless-stopped
+              container_name: npm
+              volumes:
+                - ./npm-data:/data
+                - ./npm-ssl:/etc/letsencrypt
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+              networks:
+                fnet:
+                  ipv4_address: 172.18.18.10
+                backend:
+              links:
+                - mysql_npm
+                - openresty
+
+            mysql_npm:
+              image: mysql:8.0.30
+              volumes:
+                - ./npm-database:/var/lib/mysql
+              restart: unless-stopped
+              environment:
+                MYSQL_DATABASE: nginxproxymanager
+                MYSQL_USER: npm
+                MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+                MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+              container_name: npm-mysql
+              command: --default-authentication-plugin=mysql_native_password
+              user: "mysql"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+              networks:
+                fnet:
+                  ipv4_address: 172.18.18.11
+                backend:
+
+            openresty:
+              build:
+                context: ./nginx
+                dockerfile: Dockerfile
+              container_name: resty
+              image: resty
+              restart: unless-stopped
+              expose:
+                - "80"
+              volumes:
+                - "./nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf"
+                #- "./nginx/error.log:/usr/local/openresty/nginx/logs/error.log"
+                - "./nginx/nginx-conf-files/:/etc/nginx/conf.d"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+              networks:
+                fnet:
+                  ipv4_address: 172.18.18.12
+
+          networks:
+            fnet:
+              driver: bridge
+              driver_opts:
+                com.docker.network.enable_ipv6: "false"
+              ipam:
+                driver: default
+                config:
+                - subnet: 172.18.18.0/24
+                  gateway: 172.18.18.1
+            backend:
+              name: npm_backend
+              driver: bridge
+              driver_opts:
+                com.docker.network.enable_ipv6: "false"
+        owner: root
+        group: docker
+        mode: '0644'
+
+    - name: change directory owner in "/opt/frontproxy/docker-compose.yml"
+      file:
+        path: /opt/frontproxy/docker-compose.yml
+        state: file
+        owner: root
+        group: docker
+    
+    - name: create npm-data directory
+      file:
+        path: /opt/frontproxy/npm-data
+        state: directory
+        owner: root
+        group: docker
+        mode: '0755'
+
+    - name: create npm-ssl directory
+      file:
+        path: /opt/frontproxy/npm-ssl
+        state: directory
+        owner: root
+        group: docker
+        mode: '0755'
+    
+    - name: create nginx directory
+      file:
+        path: /opt/frontproxy/nginx
+        state: directory
+        owner: '999'
+        group: '999'
+        mode: '0755'
+
+    - name: create nginx Dockerfile
+      copy:
+        dest: /opt/frontproxy/nginx/Dockerfile
+        content: |
+          FROM openresty/openresty:focal
+          RUN mkdir /var/log/nginx
+          RUN ["luarocks", "install", "lua-resty-session"]
+          RUN ["luarocks", "install", "lua-resty-http"]
+          RUN ["luarocks", "install", "lua-resty-jwt"]
+          RUN ["luarocks", "install", "lua-resty-openidc"]
+          EXPOSE 80
+        owner: root
+        group: docker
+        mode: '0644'
+    
+    - name: create nginx/nginx.conf
+      copy:
+        dest: /opt/frontproxy/nginx/nginx.conf
+        content: |
+          #user  nobody;
+          worker_processes 1;
+
+          error_log  logs/error.log;
+          #error_log  logs/error.log  notice;
+          #error_log  logs/error.log  info;
+
+          #pid        logs/nginx.pid;
+          include /usr/share/nginx/modules/*.conf;
+
+          events {
+              worker_connections  1024;
+          }
+
+
+          http {
+                lua_ssl_verify_depth 2;
+                lua_ssl_trusted_certificate /etc/ssl/certs/ISRG_Root_X1.pem;
+              resolver 8.8.8.8;
+              include       mime.types;
+              default_type  application/octet-stream;
+              #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+              #                  '$status $body_bytes_sent "$http_referer" '
+              #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+              #access_log  logs/access.log  main;
+
+              # See Move default writable paths to a dedicated directory (#119)
+              # https://github.com/openresty/docker-openresty/issues/119
+              client_body_temp_path /var/run/openresty/nginx-client-body;
+              proxy_temp_path       /var/run/openresty/nginx-proxy;
+              fastcgi_temp_path     /var/run/openresty/nginx-fastcgi;
+              uwsgi_temp_path       /var/run/openresty/nginx-uwsgi;
+              scgi_temp_path        /var/run/openresty/nginx-scgi;
+
+              sendfile        on;
+              #tcp_nopush     on;
+
+              #keepalive_timeout  0;
+              keepalive_timeout  65;
+
+              #gzip  on;
+
+              include /etc/nginx/conf.d/*.conf;
+              lua_shared_dict discovery 1m;
+              # cache for JWKs
+              lua_shared_dict jwks 1m;
+              index   index.html index.htm;
+            }
+        owner: root
+        group: docker
+        mode: '0644'
+    
+    - name: change directory owner in "/opt/frontproxy/nginx"
+      file:
+        path: /opt/frontproxy/nginx
+        state: directory
+        owner: root
+        group: docker
+        recurse: yes
+    
+    - name: Generiere MYSQL_PASSWORD
+      set_fact:
+        mysql_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+
+    - name: Generiere MYSQL_ROOT_PASSWORD
+      set_fact:
+        mysql_root_password: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters,digits') }}"
+
+    - name: Erstelle .env Datei in /opt/frontproxy
+      copy:
+        dest: /opt/frontproxy/.env
+        content: |
+          MYSQL_PASSWORD={{ mysql_password }}
+          MYSQL_ROOT_PASSWORD={{ mysql_root_password }}
+        owner: root
+        group: docker
+        mode: '0640'
+    
+    - name: Starte Docker Compose Service
+      command: docker-compose up -d
+      args:
+        chdir: /opt/frontproxy
