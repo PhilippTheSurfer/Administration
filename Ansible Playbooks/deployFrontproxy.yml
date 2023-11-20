@@ -32,7 +32,7 @@
           version: '3'
           services:
             nginxproxymanager:
-              image: jc21/nginx-proxy-manager:2.9.18
+              image: jc21/nginx-proxy-manager:2.10.4
               ports:
                 - '80:80'
                 - '81:81'
@@ -61,7 +61,7 @@
                 - openresty
 
             mysql_npm:
-              image: mysql:8.0.30
+              image: mysql:8.0.35
               volumes:
                 - ./npm-database:/var/lib/mysql
               restart: unless-stopped
@@ -144,13 +144,21 @@
         owner: root
         group: docker
         mode: '0755'
-    
+
+    - name: create npm-database directory
+      file:
+        path: /opt/frontproxy/npm-database
+        state: directory
+        owner: '999'
+        group: '999'
+        mode: '0755'
+
     - name: create nginx directory
       file:
         path: /opt/frontproxy/nginx
         state: directory
-        owner: '999'
-        group: '999'
+        owner: root
+        group: docker
         mode: '0755'
 
     - name: create nginx Dockerfile
@@ -252,6 +260,6 @@
         mode: '0640'
     
     - name: Starte Docker Compose Service
-      command: docker-compose up -d
+      command: docker compose up -d
       args:
         chdir: /opt/frontproxy
