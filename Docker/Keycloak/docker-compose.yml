@@ -33,7 +33,7 @@ services:
       - ./keycloak-restrict-client-auth.jar:/opt/jboss/keycloak/providers/keycloak-restrict-client-auth.jar
 
   mysql_keycloak:
-    image: mysql:8.0.19
+    image: mysql:8.2.0
     volumes:
       - ./Database:/var/lib/mysql
     restart: unless-stopped
