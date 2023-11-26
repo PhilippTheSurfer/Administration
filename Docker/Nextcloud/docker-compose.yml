@@ -4,7 +4,7 @@ version: "3"
 services:
   nextcloud-app:
     container_name: nextcloud
-    image: nextcloud:25.0.2
+    image: nextcloud:25.0.13
     restart: unless-stopped
     volumes:
       - ./nextcloud-data:/var/www/html
