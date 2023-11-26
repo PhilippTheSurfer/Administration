@@ -1,0 +1,32 @@
+version: '3.3'
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    environment:
+      VIRTUAL_HOST: p-kuma.gruppe.ai
+      LETSENCRYPT_HOST: p-kuma.gruppe.ai
+      LETSENCRYPT_EMAIL: philipp.lehmann@gruppe.ai
+    ports:
+      - 3001:3001
+    restart: unless-stopped
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.53
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: kuma_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

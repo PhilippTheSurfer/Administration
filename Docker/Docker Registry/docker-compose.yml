@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  registry:
+    image: registry:2
+    ports:
+    - "5000:5000"
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry
+      REGISTRY_AUTH_HTPASSWD_PATH: ./auth/htpasswd
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: ./data
+    volumes:
+      - ./auth:/auth
+      - ./data:/data
+    restart: unless-stopped
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.56
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "16384m"
+
+
+  docker-registry-ui:
+    image: konradkleine/docker-registry-frontend:v2
+    container_name: docker-registry-ui
+#    ports:
+#      - "80:80"
+    environment:
+      ENV_DOCKER_REGISTRY_HOST: docker-registry
+      ENV_DOCKER_REGISTRY_PORT: 5000
+#      ENV_DOCKER_REGISTRY_USE_SSL: 1
+#      FQDN: docker.gruppe.ai
+    restart: unless-stopped
+    depends_on:
+      - docker-registry
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.51
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "16384m"
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: dockerreg_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

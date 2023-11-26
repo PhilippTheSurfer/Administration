@@ -1,0 +1,29 @@
+version: '3'
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    environment:
+      VIRTUAL_HOST: p-portainer.gruppe.ai
+    restart: unless-stopped
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.52
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: portainer_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

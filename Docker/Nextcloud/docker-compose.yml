@@ -1,0 +1,56 @@
+version: "3"
+
+
+services:
+  nextcloud-app:
+    container_name: nextcloud
+    image: nextcloud:25.0.2
+    restart: unless-stopped
+    volumes:
+      - ./nextcloud-data:/var/www/html
+    environment:
+      VIRTUAL_HOST: its-nextcloud.rubhub.cloud
+      LETSENCRYPT_EMAIL: philipp.lehmann@gruppe.ai
+      LETSENCRYPT_HOST: its-nextcloud.rubhub.cloud
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_HOST: nextcloud-db
+      DB_PORT: 3306
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.50
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+
+
+  nextcloud-db:
+    image: mysql:8.0.30
+    volumes:
+      - ./nextcloud-db:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT}
+    container_name: nextcloud-mysql
+    user: "mysql"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+    networks:
+      - backend
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: nextcloud_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

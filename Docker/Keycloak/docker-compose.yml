@@ -1,0 +1,62 @@
+version: '3'
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:15.1.0
+    container_name: aigruppe-keycloak
+    restart: unless-stopped
+    environment:
+      DB_VENDOR: ${DB_VENDOR}
+      DB_ADDR: ${DB_ADDR}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PORT: "3306"
+      DB_PASSWORD: ${DB_PASSWORD}
+#      JDBC_PARAMS: ${JDBC_PARAMS}
+      KEYCLOAK_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+      KEYCLOAK_HTTP_PORT: ${KEYCLOAK_HTTP_PORT}
+      KEYCLOAK_USER: ${KEYCLOAK_USER}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+      PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING}
+    depends_on:
+      - mysql_keycloak
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.30
+      keycloak_intern:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    volumes:
+      - ./theme/AItheme:/opt/jboss/keycloak/themes/AItheme
+      - ./standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+      - ./keycloak-restrict-client-auth.jar:/opt/jboss/keycloak/providers/keycloak-restrict-client-auth.jar
+
+  mysql_keycloak:
+    image: mysql:8.0.19
+    volumes:
+      - ./Database:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: d41d8cd98f00b204e9800998ecf8427e
+    container_name: aigruppe-keycloak-mysql
+#    command: --default-authentication-plugin=mysql_native_password
+    user: "mysql"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    networks:
+      - keycloak_intern
+
+networks:
+  frontproxy_fnet:
+     external: true
+  keycloak_intern:
+    name: keycloak_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"

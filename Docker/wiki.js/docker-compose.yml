@@ -1,0 +1,60 @@
+version: '3'
+services:
+  wiki:
+    image: requarks/wiki:2.5
+    container_name: wiki-requarks
+    restart: unless-stopped
+    environment:
+      VIRTUAL_PORT: 3000
+      VIRTUAL_HOST: its-wiki.rubhub.cloud
+      LETSENCRYPT_HOST: its-wiki.rubhub.cloud
+      LETSENCRYPT_EMAIL: philipp.lehmann@gruppe.ai
+      DB_TYPE: mysql
+      DB_HOST: mysql_wiki
+      DB_USER: ${DB_USER}
+      DB_PORT: 3306
+      DB_PASS: ${DB_PASSWORD}
+      DB_NAME: ${DB_DATABASE}
+    depends_on:
+      - mysql_wiki
+    expose:
+      - "3000"
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.25
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+#    volumes:
+#      - ./config/config.yml:/wiki/config.yml
+#      - ./css:/wiki/assets/css
+
+  mysql_wiki:
+    image: mysql:8.0.30
+    volumes:
+      - ./database:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT}
+    container_name: wiki-mysql
+    user: "mysql"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    networks:
+      - backend
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: wiki_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
