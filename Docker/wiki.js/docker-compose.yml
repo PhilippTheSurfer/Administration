@@ -32,7 +32,7 @@ services:
 #      - ./css:/wiki/assets/css
 
   mysql_wiki:
-    image: mysql:8.0.30
+    image: mysql:8.2.0
     volumes:
       - ./database:/var/lib/mysql
     restart: unless-stopped
