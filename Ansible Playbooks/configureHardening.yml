@@ -17,7 +17,7 @@
   - name: clone hardening Repository
     git:
       repo: https://github.com/AI-Gruppe/ai-internal_serverscripts_sw
-      dest: /home/philipp/
+      dest: /home/philipp/ai-internal_serverscripts_sw/
       clone: yes
       update: yes
       force: yes
