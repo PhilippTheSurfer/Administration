@@ -1,0 +1,62 @@
+version: '3'
+services:
+  db:
+    image: postgres:15
+    user: root
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo16@2022      
+      - POSTGRES_DB=postgres
+    restart: unless-stopped             # run as a service
+    volumes:
+        - postgresql:/var/lib/postgresql/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    networks:
+      - backend
+
+  odoo:
+    image: odoo:17
+    user: root
+    depends_on:
+      - db
+    ports:
+      - "10016:8069"
+      - "20016:8072" # live chat
+    tty: true
+    command: --
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo16@2022
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      # - ./entrypoint.sh:/entrypoint.sh   # if you want to install additional Python packages, uncomment this line!
+      - ./addons:/mnt/extra-addons
+      - ./etc:/etc/odoo
+    restart: unless-stopped             # run as a service
+    networks:
+      frontproxy_fnet:
+        ipv4_address: 172.18.18.51
+      backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1024m"
+
+
+volumes:
+  postgresql: 
+
+
+networks:
+  frontproxy_fnet:
+     external: true
+  backend:
+    name: odoo_backend
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
