@@ -28,7 +28,7 @@ services:
 
 
   nextcloud-db:
-    image: mysql:8.2.0
+    image: mysql:8.3.0
     volumes:
       - ./nextcloud-db:/var/lib/mysql
     restart: unless-stopped
