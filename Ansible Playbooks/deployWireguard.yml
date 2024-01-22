@@ -1,0 +1,41 @@
+---
+- name: Setup WireGuard on Home Lab Server
+  hosts: your_server
+  become: yes
+
+  tasks:
+  - name: Ensure the wireguard directory exists
+    file:
+      path: /path/to/wireguard
+      state: directory
+
+  - name: Check for static IP
+    command: ip a show eth0
+    register: ip_check
+    changed_when: false
+
+  - name: Set static IP address if not set
+    command: nmcli con mod eth0 ipv4.addresses 192.168.0.150/24 ipv4.method manual
+    when: "'192.168.0.150' not in ip_check.stdout"
+
+  - name: Create WireGuard config files
+    copy:
+      dest: /path/to/wireguard/{{ item.dest }}
+      content: "{{ item.content }}"
+    loop:
+      - { dest: 'wg0.conf', content: '... WireGuard Config ...' }
+      - { dest: 'docker-compose.yml', content: '... Docker Compose Content ...' }
+
+  - name: Start WireGuard using Docker Compose
+    command: docker-compose up -d
+    args:
+      chdir: /path/to/wireguard
+
+  - name: Check if WireGuard is running
+    command: docker ps | grep wireguard
+    register: wireguard_status
+
+  - name: Notify if WireGuard is running
+    debug:
+      msg: "WireGuard service is up and running"
+    when: wireguard_status.stdout != ''
