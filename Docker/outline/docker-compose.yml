@@ -48,7 +48,7 @@ services:
         ipv4_address: 172.18.18.61
 
   redis:
-    image: redis:7.2.3
+    image: redis:7.2.4
     container_name: Outline-Redis
 #    env_file: ./.env
     ports:
