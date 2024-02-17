@@ -17,7 +17,7 @@ services:
       - gruppeai_intern
 
   wordpress:
-    image: wordpress:6.4.1-php8.1-apache
+    image: wordpress:6.4.3-php8.1-apache
     volumes:
       - ./aigruppe-html:/var/www/html
       - ./config/gruppe.ai.conf:/etc/apache2/sites-available/000-default.conf
