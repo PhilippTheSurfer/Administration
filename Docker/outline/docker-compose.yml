@@ -2,7 +2,7 @@ version: "3.2"
 services:
 
   outline:
-    image: outlinewiki/outline:0.75.0
+    image: outlinewiki/outline:0.75.2
     container_name: Outline
 #    env_file: ./.env
     ports:
